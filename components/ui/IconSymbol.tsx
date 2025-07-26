@@ -19,6 +19,7 @@ const MAPPING = {
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
   "photo.fill": "photo",
+  repeat: "repeat",
 } as IconMapping;
 
 /**
@@ -32,11 +33,11 @@ export function IconSymbol({
   color,
   style,
 }: {
-  name: IconSymbolName;
+  name: ComponentProps<typeof MaterialIcons>["name"];
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  return <MaterialIcons color={color} size={size} name={name} style={style} />;
 }

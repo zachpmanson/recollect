@@ -1,142 +1,95 @@
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SwipeableCardStack, SwipeDirection } from "react-native-swipeable-card-stack";
-import LoadingSpinner from "../LoadingSpinner";
+import { AllowedPanDirection, SwipeableCardStack, SwipeDirection } from "react-native-swipeable-card-stack";
 import { ActionButton } from "../ui/ActionButton";
+import { IconSymbol } from "../ui/IconSymbol";
 import Card, { CardItem } from "./Card";
-const defaultCards: CardItem[] = [
-  // { id: "1", title: "Swipe me!", file: "" },
-  // { id: "2", title: "Next card", file: "" },
-  // { id: "3", title: "Last one", file: "" },
-];
-export const FOLDER = "file:///storage/emulated/0/DCIM/Camera/";
-
-async function getFiles() {
-  try {
-    const files = await FileSystem.readDirectoryAsync(FOLDER);
-    return files;
-  } catch (error) {
-    return [];
-  }
-}
-
-export default function CardStack() {
-  const [n, setN] = useState(0);
+import { CardStatus } from "./StackManager";
+const directions = ["left", "right", "top"];
+const directionResult: { [k in (typeof directions)[number]]: CardStatus } = {
+  left: "rejected",
+  right: "accepted",
+  top: "deleted",
+};
+export default function CardStack({
+  cards,
+  setStatus,
+  getNewBatch,
+}: {
+  cards: CardItem[];
+  setStatus: (id: number, status: CardStatus) => void;
+  getNewBatch: () => void;
+}) {
   const [swipes, setSwipes] = useState<SwipeDirection[]>([]); // First card already swiped right
+
   const { bottom } = useSafeAreaInsets();
 
-  const [cards, setCards] = useState<CardItem[]>(defaultCards);
-  const [allImages, setAllImages] = useState<string[]>([]);
-
-  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
-
-  async function reqPerms() {
-    if (permissionResponse?.status !== "granted") {
-      await requestPermission();
-    }
-
-    const files = await getFiles();
-    setAllImages(files);
-    return files;
-  }
-
-  async function loadImage() {
-    const file = allImages[Math.floor(Math.random() * allImages.length)];
-    console.log(`Adding card with file:`, file);
-    if (file) {
-      setCards((o) => {
-        const n = o;
-        // if (n.length >= 10) {
-        //   n.shift();
-        // }
-        return [
-          ...n,
-          {
-            id: `Card ${n} ${file}`,
-            title: `${file}`,
-            file: `${FOLDER}${file}`,
-          },
-        ];
-      });
-
-      setN((o) => o + 1);
-    }
-  }
-
-  useEffect(() => {
-    reqPerms().then();
-  }, []);
-
-  useEffect(() => {
-    loadImage().then();
-  }, [swipes]);
-
-  useEffect(() => {
-    if (allImages.length !== 0) {
-      loadImage().then();
-      loadImage().then();
-      loadImage().then();
-      loadImage().then();
-      loadImage().then();
-      loadImage().then();
-    }
-  }, [allImages]);
+  const currentCard = cards[swipes.length];
 
   return (
     <View style={styles.container}>
       <View style={{ flex: 1, justifyContent: "center", alignItems: "stretch" }}>
-        {cards.length === 0 ? (
-          <LoadingSpinner />
-        ) : (
-          <SwipeableCardStack<CardItem>
-            data={cards}
-            swipes={swipes}
-            renderCard={renderCard}
-            keyExtractor={(item) => item.id}
-            allowedPanDirections={["left", "right"]}
-            allowedSwipeDirections={["left", "right"]}
-            onSwipeEnded={(_, direction) =>
-              setSwipes((o) => {
-                const n = o;
-                // if (n.length >= 10) {
-                //   n.shift();
-                // }
-                return [...n, direction];
-              })
-            }
-            style={styles.stack}
-          />
-        )}
+        {/* <LoadingSpinner /> */}
+
+        <SwipeableCardStack<CardItem>
+          data={cards}
+          swipes={swipes}
+          renderCard={renderCard}
+          keyExtractor={(item) => item.ukey}
+          allowedPanDirections={directions as AllowedPanDirection[]}
+          allowedSwipeDirections={directions as AllowedPanDirection[]}
+          onSwipeEnded={(card, direction) => {
+            setSwipes((o) => [...o, direction]);
+            setStatus(card.id, directionResult[direction]);
+          }}
+          style={styles.stack}
+        />
       </View>
       <Text style={{ textAlign: "center", marginBottom: 16 }}>
-        n_cards: {cards.length} swipes: {swipes.length}
+        {swipes.length + 1}/{cards.length}
       </Text>
       <View style={styles.actionButtonsContainer}>
         <ActionButton
+          style={{ backgroundColor: "red" }}
+          disabled={cards.length === swipes.length}
           onPress={() => {
             setSwipes((current) => [...current, "left"]);
+            setStatus(currentCard.id, "rejected");
           }}
         >
-          ⬅️
+          <IconSymbol name="arrow-back" color="white" />
         </ActionButton>
         <ActionButton
           onPress={() => {
-            reqPerms();
-            setSwipes((current) => []);
+            // reqPerms();
+            setSwipes((prev) => {
+              const next = [...prev];
+              next.pop(); // Remove the last swipe
+              return next;
+            });
           }}
         >
-          💥
+          <IconSymbol name="undo" color="black" />
+        </ActionButton>
+        <ActionButton
+          onPress={() => {
+            getNewBatch();
+            setSwipes([]);
+          }}
+          disabled={cards.length === swipes.length}
+        >
+          <IconSymbol name="repeat" color={"black"} />
         </ActionButton>
 
         <ActionButton
+          style={{ backgroundColor: "lightgreen" }}
           onPress={() => {
             setSwipes((current) => [...current, "right"]);
+            setStatus(currentCard.id, "accepted");
           }}
         >
-          ➡️
+          <IconSymbol name="arrow-forward" color="white" />
         </ActionButton>
       </View>
     </View>

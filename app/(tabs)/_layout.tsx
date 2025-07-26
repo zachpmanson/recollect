@@ -27,24 +27,24 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="images"
+        name="index"
         options={{
           title: "Images",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="photo.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="photo" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="home" color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: "Explore",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="send" color={color} />,
         }}
       />
     </Tabs>

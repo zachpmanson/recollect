@@ -6,7 +6,8 @@ import { CardProps } from "react-native-swipeable-card-stack";
 import { CardOverlay } from "./CardOverlay";
 
 export type CardItem = {
-  id: string;
+  id: number;
+  ukey: string;
   title: string;
   file: string;
 };
@@ -14,7 +15,7 @@ export type CardItem = {
 async function getFileInfo(file: string) {
   try {
     const info = await FileSystem.getInfoAsync(file);
-    const modificationTime = info.modificationTime;
+    const modificationTime = "modificationTime" in info ? info.modificationTime : "";
     return info;
   } catch (error) {
     console.error("Error getting file info:", error);
@@ -32,6 +33,25 @@ function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardP
     }
   }, [item.file]);
 
+  const potentialDates = item.file.match(/20\d\d\d\d\d\d/);
+  const filenameDate = potentialDates ? potentialDates[0] : null;
+  const filenameDateObj = filenameDate
+    ? new Date(`${filenameDate.slice(0, 4)}-${filenameDate.slice(4, 6)}-${filenameDate.slice(6, 8)}`)
+    : null;
+
+  const filenameDateStr = filenameDateObj?.toLocaleDateString("en-au", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  const metaDate = meta?.modificationTime ? new Date(meta.modificationTime * 1000) : null;
+  const metaDateStr = metaDate?.toLocaleDateString("en-au", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
   return (
     <View style={styles.container}>
       <View style={{ flex: 1 }}>
@@ -40,20 +60,31 @@ function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardP
 
       <View
         style={{
-          alignItems: "center",
+          alignItems: "stretch",
+          paddingHorizontal: 8,
+          paddingVertical: 8,
+          gap: 8,
         }}
       >
-        <Text>
-          Allegedly:{" "}
-          <Text style={styles.text}>
-            {meta &&
-              new Date(meta?.modificationTime * 1000).toLocaleDateString("en-au", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
-          </Text>
-        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View>
+            {metaDate && <Text>Allegedly: </Text>}
+            {filenameDateObj && <Text>Filename Indicates:</Text>}
+          </View>
+          <View>
+            <Text style={styles.text}>{metaDateStr}</Text>
+            {filenameDateObj && (
+              <Text
+                style={[
+                  styles.text,
+                  metaDateStr === filenameDateStr ? { backgroundColor: "lightgreen" } : { backgroundColor: "red" },
+                ]}
+              >
+                {filenameDateStr}
+              </Text>
+            )}
+          </View>
+        </View>
         <Text>{item.title}</Text>
         {/* <Text style={styles.text}>{meta && JSON.stringify(meta)}</Text> */}
         {/* <Text style={styles.text}>{meta && meta?.modificationTime * 1000}</Text> */}
@@ -75,20 +106,16 @@ const styles = StyleSheet.create({
     // minHeight: 400,
     justifyContent: "space-between",
     backgroundColor: "white",
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#00000088",
+    borderRadius: 8,
     overflow: "hidden",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(35, 35, 35, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)",
   },
   image: {
     flex: 1,
     width: "100%",
   },
   text: {
-    textAlign: "center",
     fontWeight: "600",
-    fontSize: 18,
-    padding: 16,
     color: "black",
   },
 });
