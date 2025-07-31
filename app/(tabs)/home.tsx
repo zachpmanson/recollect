@@ -1,12 +1,24 @@
 import { Image } from "expo-image";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import Todo from "@/components/Todo";
+import { useSQLiteContext } from "expo-sqlite";
+import { useEffect, useState } from "react";
 
 export default function HomeScreen() {
+  const db = useSQLiteContext();
+  const [version, setVersion] = useState("");
+  useEffect(() => {
+    async function setup() {
+      const result = await db.getFirstAsync<{ "sqlite_version()": string }>("SELECT sqlite_version()");
+      if (result) setVersion(result["sqlite_version()"]);
+    }
+    setup();
+  }, []);
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -44,6 +56,10 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
         </ThemedText>
       </ThemedView>
+      <View>
+        <ThemedText>SQLite version: {version}</ThemedText>
+        <Todo />
+      </View>
     </ParallaxScrollView>
   );
 }

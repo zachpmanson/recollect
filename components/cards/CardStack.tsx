@@ -8,9 +8,9 @@ import Card, { CardItem } from "./Card";
 import { CardStatus } from "./StackManager";
 const directions = ["left", "right", "top"];
 const directionResult: { [k in (typeof directions)[number]]: CardStatus } = {
-  left: "rejected",
+  left: "deleted",
   right: "accepted",
-  top: "deleted",
+  top: "rejected",
 };
 export default function CardStack({
   cards,
@@ -58,7 +58,7 @@ export default function CardStack({
             setStatus(currentCard.id, "rejected");
           }}
         >
-          <IconSymbol name="arrow-back" color="white" />
+          <IconSymbol name="clear" color="white" />
         </ActionButton>
         <ActionButton
           onPress={() => {
@@ -89,7 +89,7 @@ export default function CardStack({
             setStatus(currentCard.id, "accepted");
           }}
         >
-          <IconSymbol name="arrow-forward" color="white" />
+          <IconSymbol name="check" color="white" />
         </ActionButton>
       </View>
     </View>

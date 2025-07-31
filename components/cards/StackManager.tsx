@@ -1,3 +1,4 @@
+import useDb from "@/db/useDb";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import { useEffect, useMemo, useState } from "react";
@@ -22,6 +23,8 @@ async function getFiles() {
 
 /** Marshalls card blocks */
 export default function StackManager() {
+  const db = useDb();
+
   const [loadingStatus, setLoadingStatus] = useState<"loading-all-files" | "loading-batch" | "nothing">(
     "loading-all-files"
   );
@@ -55,6 +58,15 @@ export default function StackManager() {
 
     setCurrentCards((o) => [...o, ...newFiles]);
     setLoadingStatus("nothing");
+    const query = `INSERT INTO images (
+          original_path,
+          original_date,
+          status
+        ) VALUES 
+          ${newFiles.map((n) => `('${n.card.file}', '2020-01-01', 'pending')`).join(",\n")} 
+        `;
+    console.log(query);
+    db.exec(query).then();
   }
 
   async function setup() {
