@@ -1,118 +1,64 @@
+import { ImageModel, CardStatus as ImageStatus } from "@/db/images";
 import useDb from "@/db/useDb";
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
-import { useEffect, useMemo, useState } from "react";
+import usePhotoIngest from "@/hooks/usePhotoIngest";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { Load } from "../ui/LoadingSpinner";
-import { CardItem } from "./Card";
 import CardStack from "./CardStack";
 import DebugModal from "./DebugModal";
 
-export type CardStatus = "pending" | "accepted" | "rejected" | "deleted";
-type CardData = { card: CardItem; status: CardStatus };
-export const FOLDER = "file:///storage/emulated/0/DCIM/Camera/";
-
-async function getFiles() {
-  try {
-    const files = await FileSystem.readDirectoryAsync(FOLDER);
-    return files;
-  } catch (error) {
-    return [];
-  }
-}
+export type ImageWithPosition = ImageModel & { position: number };
 
 /** Marshalls card blocks */
 export default function StackManager() {
   const db = useDb();
 
-  const [loadingStatus, setLoadingStatus] = useState<"loading-all-files" | "loading-batch" | "nothing">(
-    "loading-all-files"
-  );
-  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
-  const [allImages, setAllImages] = useState<string[]>([]);
+  const { loadNImage, ingesting } = usePhotoIngest();
 
-  const [currentCards, setCurrentCards] = useState<CardData[]>([]);
-  const cards = useMemo(() => {
-    return currentCards.map(({ card }) => card);
-  }, [currentCards]);
+  const [loading, setLoading] = useState(false);
 
-  async function loadNImage(n: number) {
-    console.log("Loading N images", n);
-    setCurrentCards([]);
-    setLoadingStatus("loading-batch");
-    const newFiles: CardData[] = [];
-    for (let i = 0; i < n; i++) {
-      const file = allImages[Math.floor(Math.random() * allImages.length)];
-      if (file) {
-        newFiles.push({
-          card: {
-            id: i,
-            ukey: `Card ${i} ${file}`,
-            title: `${file}`,
-            file: `${FOLDER}${file}`,
-          },
-          status: "pending",
+  const [currentCards, setCurrentCards] = useState<ImageModel[]>([]);
+
+  function setStatus(img: ImageWithPosition, status: ImageStatus) {
+    const pending = currentCards.filter((c) => c.status === "pending");
+    db.repositories.image
+      .setStatus(img.id, status)
+      .then(() => {
+        if (pending.length === 1) newBatch().then();
+
+        setCurrentCards((prev) => {
+          const next = [...prev];
+          next[img.position].status = status;
+          return next;
         });
-      }
-    }
-
-    setCurrentCards((o) => [...o, ...newFiles]);
-    setLoadingStatus("nothing");
-    const query = `INSERT INTO images (
-          original_path,
-          original_date,
-          status
-        ) VALUES 
-          ${newFiles.map((n) => `('${n.card.file}', '2020-01-01', 'pending')`).join(",\n")} 
-        `;
-    console.log(query);
-    db.exec(query).then();
-  }
-
-  async function setup() {
-    if (permissionResponse?.status !== "granted") {
-      await requestPermission();
-    }
-    const files = await getFiles();
-    setAllImages(files);
-  }
-
-  function setStatus(id: number, status: CardStatus) {
-    setCurrentCards((old) => {
-      const newCards = [...old];
-      newCards[id].status = status;
-      return newCards;
-    });
+      })
+      .catch((e) => console.error(e));
   }
 
   useEffect(() => {
-    setup().then();
-  }, []);
-
-  useEffect(() => {
-    if (allImages.length > 0) {
-      newBatch();
-    }
-  }, [allImages]);
-
-  const allStatusSet = useMemo(() => {
-    if (currentCards.length === 0) return false;
-    return currentCards.every((c) => c.status !== "pending");
-  }, [currentCards]);
-
-  useEffect(() => {
+    const allStatusSet = currentCards.length > 0 && currentCards.every((c) => c.status !== "pending");
     if (allStatusSet) {
       console.log("All cards have been set");
-      setLoadingStatus("loading-batch");
-      setTimeout(() => {
-        newBatch();
-      }, 1000);
+      newBatch().then();
     }
-  }, [allStatusSet]);
+  }, [currentCards]);
 
-  function newBatch() {
-    loadNImage(10).then();
+  async function newBatch() {
+    setLoading(true);
+    const images = await loadNImage(10);
+    setCurrentCards(images);
+    setLoading(false);
   }
+
+  useEffect(() => {
+    if (!ingesting && currentCards.length === 0) {
+      newBatch().then();
+    }
+  }, [ingesting]);
+
+  useEffect(() => {
+    newBatch().then();
+  }, []);
 
   return (
     <>
@@ -122,13 +68,22 @@ export default function StackManager() {
           flexGrow: 1,
         }}
       >
-        <Load isLoading={allStatusSet || loadingStatus !== "nothing"}>
-          <CardStack getNewBatch={newBatch} cards={cards} setStatus={setStatus} />
+        {/* <Button onPress={() => newBatch().then()}>More</Button> */}
+        <Load isLoading={currentCards.length === 0 || loading}>
+          <CardStack
+            getNewBatch={newBatch}
+            cards={currentCards.map((currentCards, i) => ({
+              ...currentCards,
+              position: i,
+            }))}
+            setStatus={setStatus}
+          />
         </Load>
       </View>
       <DebugModal>
-        <Text>loadingStatus: {loadingStatus}</Text>
-        <Text>{JSON.stringify({ allStatusSet, currentCards }, null, 2)}</Text>
+        <Text>loadingStatus: {loading}</Text>
+        <Text>ingesting: {String(ingesting)}</Text>
+        <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>
       </DebugModal>
     </>
   );

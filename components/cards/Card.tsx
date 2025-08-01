@@ -1,16 +1,10 @@
+import { ImageModel } from "@/db/images";
 import * as FileSystem from "expo-file-system";
 import { Image } from "expo-image";
 import { memo, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CardProps } from "react-native-swipeable-card-stack";
 import { CardOverlay } from "./CardOverlay";
-
-export type CardItem = {
-  id: number;
-  ukey: string;
-  title: string;
-  file: string;
-};
 
 async function getFileInfo(file: string) {
   try {
@@ -22,18 +16,20 @@ async function getFileInfo(file: string) {
     return [];
   }
 }
-function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardProps<CardItem>) {
+function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardProps<ImageModel>) {
   const [meta, setMeta] = useState<any>(null);
 
+  const filename = item.original_path.split("/").at(-1);
+
   useEffect(() => {
-    if (item.file) {
-      getFileInfo(item.file).then((info) => {
+    if (item.original_path) {
+      getFileInfo(item.original_path).then((info) => {
         setMeta(info);
       });
     }
-  }, [item.file]);
+  }, [item.original_path]);
 
-  const potentialDates = item.file.match(/20\d\d\d\d\d\d/);
+  const potentialDates = filename?.match(/20\d\d\d\d\d\d/);
   const filenameDate = potentialDates ? potentialDates[0] : null;
   const filenameDateObj = filenameDate
     ? new Date(`${filenameDate.slice(0, 4)}-${filenameDate.slice(4, 6)}-${filenameDate.slice(6, 8)}`)
@@ -55,7 +51,7 @@ function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardP
   return (
     <View style={styles.container}>
       <View style={{ flex: 1 }}>
-        <Image source={item.file} style={styles.image} contentFit="contain" />
+        <Image source={item.original_path} style={styles.image} contentFit="contain" />
       </View>
 
       <View
@@ -85,7 +81,8 @@ function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardP
             )}
           </View>
         </View>
-        <Text>{item.title}</Text>
+        <Text>{filename}</Text>
+
         {/* <Text style={styles.text}>{meta && JSON.stringify(meta)}</Text> */}
         {/* <Text style={styles.text}>{meta && meta?.modificationTime * 1000}</Text> */}
 

@@ -3,7 +3,7 @@ import { migrateDbIfNeeded } from "@/db/migrate";
 import { ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
-import { deleteDatabaseAsync, SQLiteProvider } from "expo-sqlite";
+import { SQLiteProvider } from "expo-sqlite";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -17,7 +17,7 @@ export default function RootLayout() {
     // Async font loading only occurs in development.
     return null;
   }
-  deleteDatabaseAsync("recollect.db").then();
+  // deleteDatabaseAsync("recollect.db").then();
 
   return (
     <ThemeProvider value={theme}>

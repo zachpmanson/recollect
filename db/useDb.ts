@@ -1,4 +1,5 @@
 import { useSQLiteContext } from "expo-sqlite";
+import { ImageRepository } from "./images";
 
 export default function useDb() {
   const db = useSQLiteContext();
@@ -25,5 +26,8 @@ export default function useDb() {
     db,
     run,
     exec,
+    repositories: {
+      image: new ImageRepository(db),
+    },
   };
 }

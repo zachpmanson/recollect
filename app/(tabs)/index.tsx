@@ -1,13 +1,11 @@
 import StackManager from "@/components/cards/StackManager";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { useTheme } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ImagesScreen() {
   const insets = useSafeAreaInsets();
-  const theme = useTheme();
 
   return (
     <>
