@@ -1,4 +1,4 @@
-import { ImageModel, CardStatus as ImageStatus } from "@/db/images";
+import { ImageModel, ImageStatus } from "@/db/images";
 import useDb from "@/db/useDb";
 import usePhotoIngest from "@/hooks/usePhotoIngest";
 import { useEffect, useState } from "react";

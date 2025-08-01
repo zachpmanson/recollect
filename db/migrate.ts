@@ -11,7 +11,8 @@ const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
         new_path TEXT,
         new_date DATE,
         status TEXT NOT NULL,
-        decision TEXT
+        decision TEXT,
+        updated_on DATETIME
       );
     `);
   },

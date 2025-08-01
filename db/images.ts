@@ -1,7 +1,18 @@
-import { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { SQLiteDatabase } from "expo-sqlite";
 
-export type CardStatus = "pending" | "accepted" | "rejected" | "deleted";
+export type ImageStatus = "pending" | "accepted" | "rejected" | "deleted";
+
+export type RawImageModel = {
+  id: number;
+  original_path: string;
+  original_date: string;
+  new_path: string | null;
+  new_date: string | null;
+  status: ImageStatus;
+  decision: string;
+  updated_on: string | null;
+};
 
 export type ImageModel = {
   id: number;
@@ -9,8 +20,9 @@ export type ImageModel = {
   original_date: Dayjs;
   new_path: string | null;
   new_date: Dayjs | null;
-  status: CardStatus;
+  status: ImageStatus;
   decision: string;
+  updated_on: Dayjs | null;
 };
 
 export class ImageRepository {
@@ -20,7 +32,7 @@ export class ImageRepository {
     this.db = db;
   }
 
-  async bulkUpsert(values: { original_path: string; status: CardStatus }[]) {
+  async bulkUpsert(values: { original_path: string; status: ImageStatus }[]) {
     for (let i = 0; i < values.length; i += 50) {
       const items = values
         .slice(i, i + 50)
@@ -36,14 +48,27 @@ export class ImageRepository {
     }
   }
 
-  async getNPending(n: number) {
-    const images = await this.db.getAllAsync<ImageModel>(`
+  async getNPending(n: number, day?: Dayjs) {
+    if (day) {
+      const images = await this.db.getAllAsync<RawImageModel>(
+        `SELECT * FROM images WHERE status='pending' AND original_date=? ORDER BY RANDOM() LIMIT ${n};`,
+        day.format("YYYY-MM-DD")
+      );
+    } else {
+      const images = await this.db.getAllAsync<RawImageModel>(`
         SELECT * FROM images WHERE status='pending' ORDER BY RANDOM() LIMIT ${n};
       `);
-    return images;
+    }
+
+    return images.map<ImageModel>((i) => ({
+      ...i,
+      original_date: dayjs(i.original_date),
+      new_date: i.new_date ? dayjs(i.new_date) : null,
+      updated_on: i.updated_on ? dayjs(i.updated_on) : null,
+    }));
   }
 
-  async setStatus(id: number, status: CardStatus) {
-    await this.db.runAsync(`UPDATE images SET status = ? WHERE id = ?;`, status, id);
+  async setStatus(id: number, status: ImageStatus) {
+    await this.db.runAsync(`UPDATE images SET status = ?, updated_on = 'now' WHERE id = ?;`, status, id);
   }
 }

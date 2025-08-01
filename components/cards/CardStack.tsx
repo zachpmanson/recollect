@@ -1,4 +1,4 @@
-import { CardStatus } from "@/db/images";
+import { ImageStatus } from "@/db/images";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,7 +9,7 @@ import Card from "./Card";
 import { ImageWithPosition } from "./StackManager";
 
 const directions = ["left", "right", "top"];
-const directionResult: { [k in (typeof directions)[number]]: CardStatus } = {
+const directionResult: { [k in (typeof directions)[number]]: ImageStatus } = {
   left: "deleted",
   right: "accepted",
   top: "rejected",
@@ -21,7 +21,7 @@ export default function CardStack({
   getNewBatch,
 }: {
   cards: ImageWithPosition[];
-  setStatus: (img: ImageWithPosition, status: CardStatus) => void;
+  setStatus: (img: ImageWithPosition, status: ImageStatus) => void;
   getNewBatch: () => void;
 }) {
   const [swipes, setSwipes] = useState<SwipeDirection[]>([]); // First card already swiped right

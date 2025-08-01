@@ -34,19 +34,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="home"
+        name="history"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="home" color={color} />,
+          title: "History",
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="history" color={color} />,
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="explore"
         options={{
           title: "Explore",
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="send" color={color} />,
         }}
-      />
+      /> */}
     </Tabs>
   );
 }

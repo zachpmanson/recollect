@@ -29,6 +29,7 @@ export default function usePhotoIngest() {
   const db = useDb();
   const [ingesting, setIngesting] = useState(false);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+  // const [day, setDay] = useState<Dayjs>();
 
   async function updateFolderInDb() {
     setIngesting(true);
@@ -65,11 +66,15 @@ export default function usePhotoIngest() {
 
   useEffect(() => {
     setup().then();
-  }, []);
+  }, [permissionResponse?.status]);
 
   async function loadNImage(n: number) {
     return await db.repositories.image.getNPending(n);
   }
+
+  // async function pickDay() {
+  //   const i = await db.repositories.image.getNPending(1);
+  // }
 
   return { loadNImage, ingesting };
 }
