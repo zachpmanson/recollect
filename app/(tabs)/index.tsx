@@ -12,7 +12,7 @@ export default function ImagesScreen() {
       <GestureHandlerRootView>
         <ThemedView style={{ padding: 8, paddingTop: insets?.top }}>
           <ThemedText type="title">Recollect</ThemedText>
-          <ThemedText>This app includes example code to help you get started.</ThemedText>
+          <ThemedText>Organise your photos, day by day.</ThemedText>
         </ThemedView>
         <ThemedView style={{ flex: 1, padding: 20, minHeight: 700 }}>
           <StackManager />
