@@ -30,6 +30,7 @@ export default function HomeScreen() {
 
           <HistoryCategory status="rejected" />
           <HistoryCategory status="deleted" />
+          <HistoryCategory status="accepted" />
           <HistoryCategory status="pending" />
         </ThemedView>
       </ScrollView>
