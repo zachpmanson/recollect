@@ -69,6 +69,7 @@ export default function usePhotoIngest() {
   }, [permissionResponse?.status]);
 
   async function loadNImage(n: number) {
+    console.log(`Loading ${n} images`);
     return await db.repositories.image.getNPending(n);
   }
 

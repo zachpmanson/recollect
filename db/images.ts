@@ -49,13 +49,14 @@ export class ImageRepository {
   }
 
   async getNPending(n: number, day?: Dayjs) {
+    let images: RawImageModel[];
     if (day) {
-      const images = await this.db.getAllAsync<RawImageModel>(
+      images = await this.db.getAllAsync<RawImageModel>(
         `SELECT * FROM images WHERE status='pending' AND original_date=? ORDER BY RANDOM() LIMIT ${n};`,
         day.format("YYYY-MM-DD")
       );
     } else {
-      const images = await this.db.getAllAsync<RawImageModel>(`
+      images = await this.db.getAllAsync<RawImageModel>(`
         SELECT * FROM images WHERE status='pending' ORDER BY RANDOM() LIMIT ${n};
       `);
     }

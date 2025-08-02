@@ -44,6 +44,7 @@ export default function StackManager() {
   }, [currentCards]);
 
   async function newBatch() {
+    console.log("Getting new batch");
     setLoading(true);
     const images = await loadNImage(10);
     setCurrentCards(images);
@@ -51,6 +52,7 @@ export default function StackManager() {
   }
 
   useEffect(() => {
+    console.log("ingesting:", ingesting);
     if (!ingesting && currentCards.length === 0) {
       newBatch().then();
     }
@@ -81,7 +83,7 @@ export default function StackManager() {
         </Load>
       </View>
       <DebugModal>
-        <Text>loadingStatus: {loading}</Text>
+        <Text>loading: {String(loading)}</Text>
         <Text>ingesting: {String(ingesting)}</Text>
         <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>
       </DebugModal>

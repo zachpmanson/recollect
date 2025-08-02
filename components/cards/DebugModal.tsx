@@ -7,9 +7,9 @@ export default function DebugModal({ children }: { children: React.ReactNode }) 
   return (
     <>
       <Button
-        color="white"
+        // color="white"
         onPress={() => setOpen(true)}
-        style={{ backgroundColor: "red", width: 100, position: "absolute", top: 0, right: 0 }}
+        style={{ width: 100, position: "absolute", top: 0, right: 0 }}
       >
         Debug
       </Button>
@@ -17,7 +17,7 @@ export default function DebugModal({ children }: { children: React.ReactNode }) 
         <ScrollView style={{ padding: 8 }}>{children}</ScrollView>
 
         <View style={{ flexDirection: "row", justifyContent: "flex-end" }}></View>
-        <Button color="white" onPress={() => setOpen(false)} style={{ backgroundColor: "red", width: 100, margin: 20 }}>
+        <Button onPress={() => setOpen(false)} style={{ width: 100, margin: 20 }}>
           Close
         </Button>
       </Modal>
