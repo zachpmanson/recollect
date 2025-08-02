@@ -70,6 +70,6 @@ export class ImageRepository {
   }
 
   async setStatus(id: number, status: ImageStatus) {
-    await this.db.runAsync(`UPDATE images SET status = ?, updated_on = 'now' WHERE id = ?;`, status, id);
+    await this.db.runAsync(`UPDATE images SET status = ?, updated_on = time('now') WHERE id = ?;`, status, id);
   }
 }
