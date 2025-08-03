@@ -7,6 +7,7 @@ const migrations: ((db: SQLiteDatabase) => Promise<void>)[] = [
       CREATE TABLE images (
         id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         original_path TEXT NOT NULL UNIQUE,
+        has_date BOOLEAN,  
         original_date DATE,
         new_path TEXT,
         new_date DATE,

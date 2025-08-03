@@ -1,4 +1,5 @@
 import useDb from "@/db/useDb";
+import { Dayjs } from "dayjs";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import { useEffect, useState } from "react";
@@ -31,6 +32,21 @@ export default function usePhotoIngest() {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
   // const [day, setDay] = useState<Dayjs>();
 
+  async function setOriginalDate(id: number, date: Dayjs) {
+    await db.repositories.image.setOriginalDate(id, date);
+  }
+
+  async function bulkSetOriginalDate() {
+    // todo get file intfo
+
+    const images = await db.repositories.image.getMissingOriginalDate(100);
+    await Promise.all(
+      images.map((i) => {
+        return db.repositories.image.setOriginalDate(i.id, i.original_date);
+      })
+    );
+  }
+
   async function updateFolderInDb() {
     setIngesting(true);
     const files = await getFiles();
@@ -41,13 +57,19 @@ export default function usePhotoIngest() {
       };
     });
     console.log(`Found ${files.length} files`);
-    console.log(fileObjs.slice(0, 10));
+    // console.log(fileObjs.slice(0, 10));
     try {
       await db.repositories.image.bulkUpsert(fileObjs);
     } catch (e) {
       console.error(e);
     }
     setIngesting(false);
+    const startTime = new Date();
+    const info = await getFileInfo(fileObjs[0]?.original_path);
+
+    console.log("File info:", info);
+    const endTime = new Date();
+    console.log(`Time taken to get file info: ${endTime.getTime() - startTime.getTime()} ms`);
   }
 
   async function getPerms() {

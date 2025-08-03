@@ -1,4 +1,3 @@
-import { HelloWave } from "@/components/HelloWave";
 import HistoryCategory from "@/components/HistoryCategory";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -24,8 +23,7 @@ export default function HomeScreen() {
       <ScrollView>
         <ThemedView style={{ padding: 8, paddingTop: insets?.top, gap: 12 }}>
           <ThemedView style={{ flexDirection: "row" }}>
-            <ThemedText type="title">Backlog</ThemedText>
-            <HelloWave />
+            <ThemedText type="title">History</ThemedText>
           </ThemedView>
 
           <HistoryCategory status="rejected" />
