@@ -1,3 +1,4 @@
+import DatePopulated from "@/components/DatePopulated";
 import HistoryCategory from "@/components/HistoryCategory";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -30,6 +31,7 @@ export default function HomeScreen() {
           <HistoryCategory status="deleted" />
           <HistoryCategory status="accepted" />
           <HistoryCategory status="pending" />
+          <DatePopulated />
         </ThemedView>
       </ScrollView>
     </GestureHandlerRootView>

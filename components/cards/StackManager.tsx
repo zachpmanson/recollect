@@ -1,8 +1,9 @@
 import { ImageModel, ImageStatus } from "@/db/images";
 import useDb from "@/db/useDb";
 import usePhotoIngest from "@/hooks/usePhotoIngest";
+import { Button } from "@react-navigation/elements";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { Switch, Text, View } from "react-native";
 import { Load } from "../ui/LoadingSpinner";
 import CardStack from "./CardStack";
 import DebugModal from "./DebugModal";
@@ -14,6 +15,7 @@ export default function StackManager() {
   const db = useDb();
 
   const { loadNImage, ingesting } = usePhotoIngest();
+  const [singleDay, setSingleDay] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -46,7 +48,7 @@ export default function StackManager() {
   async function newBatch() {
     console.log("Getting new batch");
     setLoading(true);
-    const images = await loadNImage(10);
+    const images = await loadNImage(10, singleDay);
     setCurrentCards(images);
     setLoading(false);
   }
@@ -83,6 +85,11 @@ export default function StackManager() {
         </Load>
       </View>
       <DebugModal>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 8 }}>
+          <Text>Single Day</Text>
+          <Switch value={singleDay} onChange={() => setSingleDay((o) => !singleDay)} />
+        </View>
+        <Button onPress={() => newBatch().then()}>New Batch</Button>
         <Text>loading: {String(loading)}</Text>
         <Text>ingesting: {String(ingesting)}</Text>
         <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>

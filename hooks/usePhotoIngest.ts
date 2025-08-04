@@ -1,20 +1,22 @@
 import useDb from "@/db/useDb";
-import { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import { useEffect, useState } from "react";
 
 export const FOLDER = "file:///storage/emulated/0/DCIM/Camera/";
 
-async function getFileInfo(file: string) {
-  try {
-    const info = await FileSystem.getInfoAsync(file);
-    const modificationTime = "modificationTime" in info ? info.modificationTime : "";
-    return info;
-  } catch (error) {
-    console.error("Error getting file info:", error);
-    return [];
+async function getFileModDate(file: string) {
+  const info = await FileSystem.getInfoAsync(file);
+  if (!info.exists) {
+    console.error(`File does not exist: ${file}`);
+    throw new Error(`File does not exist: ${file}`);
   }
+
+  const modTime = info.modificationTime;
+  const date = dayjs(info.modificationTime * 1000);
+
+  return date;
 }
 
 async function getFiles() {
@@ -32,19 +34,35 @@ export default function usePhotoIngest() {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
   // const [day, setDay] = useState<Dayjs>();
 
-  async function setOriginalDate(id: number, date: Dayjs) {
-    await db.repositories.image.setOriginalDate(id, date);
-  }
+  // async function setOriginalDate(image: ImageModel) {
+  //   const info = await getFileInfo(image.original_path);
+  //   if (info.modificationTime) {
+  //     const date = dayjs(info.modificationTime * 1000);
+  //     // console.debug(`Setting original date for ${image.original_path} to ${date.format("YYYY-MM-DD")}`);
+  //     await db.repositories.image.setOriginalDate(image.id, date);
+  //   }
+  // }
 
-  async function bulkSetOriginalDate() {
-    // todo get file intfo
+  async function bulkAllOriginalDate() {
+    console.log("Bulk setting original dates for images without dates");
+    const batchSize = 1000;
+    let images = await db.repositories.image.getMissingOriginalDate(batchSize);
+    while (images.length !== 0) {
+      console.log(`Setting original date for ${images.length} images`);
+      const startTime = new Date();
 
-    const images = await db.repositories.image.getMissingOriginalDate(100);
-    await Promise.all(
-      images.map((i) => {
-        return db.repositories.image.setOriginalDate(i.id, i.original_date);
-      })
-    );
+      const modDates = await Promise.allSettled(
+        images.map(async (i) => {
+          return { ...i, original_date: await getFileModDate(i.original_path) };
+        })
+      );
+      const fulfilled = modDates.filter((r) => r.status === "fulfilled");
+      db.repositories.image.upsertOriginalDates(fulfilled.map((r) => r.value));
+      const endTime = new Date();
+      console.log(`Time taken to get file info: ${endTime.getTime() - startTime.getTime()} ms`);
+
+      images = await db.repositories.image.getMissingOriginalDate(batchSize);
+    }
   }
 
   async function updateFolderInDb() {
@@ -64,12 +82,6 @@ export default function usePhotoIngest() {
       console.error(e);
     }
     setIngesting(false);
-    const startTime = new Date();
-    const info = await getFileInfo(fileObjs[0]?.original_path);
-
-    console.log("File info:", info);
-    const endTime = new Date();
-    console.log(`Time taken to get file info: ${endTime.getTime() - startTime.getTime()} ms`);
   }
 
   async function getPerms() {
@@ -83,16 +95,24 @@ export default function usePhotoIngest() {
     console.log("setup perms ", permissionResponse?.status);
     if (permissionResponse?.status === "granted") {
       await updateFolderInDb();
+      await bulkAllOriginalDate();
     }
   }
 
   useEffect(() => {
+    console.log("Checking permissions on mount:", permissionResponse?.status);
     setup().then();
   }, [permissionResponse?.status]);
 
-  async function loadNImage(n: number) {
-    console.log(`Loading ${n} images`);
-    return await db.repositories.image.getNPending(n);
+  async function loadNImage(n: number, singleDay: boolean = false) {
+    console.log(`Loading ${n} images, singleDay: ${singleDay}`);
+    if (singleDay) {
+      const randImg = await db.repositories.image.getNPending(1);
+      console.debug("Random image for single day:", randImg);
+      return await db.repositories.image.getNPending(n, randImg[0].original_date);
+    } else {
+      return await db.repositories.image.getNPending(n);
+    }
   }
 
   // async function pickDay() {

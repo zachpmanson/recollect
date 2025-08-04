@@ -62,11 +62,16 @@ export class ImageRepository {
   async getNPending(n: number, day?: Dayjs) {
     let images: RawImageModel[];
     if (day) {
-      images = await this.db.getAllAsync<RawImageModel>(
-        `SELECT * FROM images WHERE status='pending' AND original_date=? ORDER BY RANDOM() LIMIT ?;`,
-        n,
-        day.format("YYYY-MM-DD")
-      );
+      try {
+        images = await this.db.getAllAsync<RawImageModel>(
+          `SELECT * FROM images WHERE status = 'pending' AND DATE(original_date) = ? ORDER BY RANDOM() LIMIT ?;`,
+          day.format("YYYY-MM-DD"),
+          n
+        );
+      } catch (error) {
+        console.error("Error fetching images with specific date:", error);
+        throw error;
+      }
     } else {
       images = await this.db.getAllAsync<RawImageModel>(
         `
@@ -76,7 +81,7 @@ export class ImageRepository {
       );
     }
 
-    return images.map<ImageModel>(rawToPacked);
+    return images.map(rawToPacked);
   }
 
   async setStatus(id: number, status: ImageStatus) {
@@ -84,18 +89,51 @@ export class ImageRepository {
   }
 
   async getMissingOriginalDate(n: number) {
-    const images = await this.db.getAllAsync<RawImageModel>(
-      `SELECT * FROM images WHERE has_date = TRUE OR has_date = NULl AND original_date IS NULL ORDER BY RANDOM() LIMIT ?;`,
-      n
-    );
-    return images.map<ImageModel>(rawToPacked);
+    try {
+      const images = await this.db.getAllAsync<RawImageModel>(
+        `SELECT * FROM images WHERE checked_date = FALSE AND original_date IS NULL LIMIT ?;`,
+        n
+      );
+      return images.map(rawToPacked);
+    } catch (error) {
+      console.error("Error getting images with missing original date:", error);
+      throw error;
+    }
   }
 
   async setOriginalDate(id: number, date: Dayjs) {
     await this.db.runAsync(
-      `UPDATE images SET original_date = ?, has_date = TRUE WHERE id = ? AND original_date = NULL;`,
-      date.format("YYYY-MM-DD"),
+      `UPDATE images SET original_date = ?, checked_date = TRUE WHERE id = ? AND original_date = NULL;`,
+      date.toISOString(),
       id
     );
+  }
+
+  async upsertOriginalDates(updates: ImageModel[]) {
+    console.debug("upsertOriginalDates", updates.length);
+    if (updates.length === 0) return;
+    const r = await this.db.getAllAsync(`PRAGMA table_info(images);`);
+    console.debug("Table info:", r);
+    const placeholders = updates.map(() => "(?, ?, ?, ?, ?)").join(", ");
+    const values = updates.flatMap(({ id, original_path, original_date, status }) => [
+      id,
+      original_path,
+      original_date.toISOString(),
+      true,
+      status,
+    ]);
+
+    const sql = `
+    INSERT INTO images (id, original_path, original_date, checked_date, status)
+    VALUES ${placeholders}
+    ON CONFLICT(id) DO UPDATE SET
+      original_date = CASE
+        WHEN images.original_date IS NULL THEN excluded.original_date
+        ELSE images.original_date
+      END,
+      checked_date = TRUE;
+  `;
+
+    const res = await this.db.runAsync(sql, ...values);
   }
 }
