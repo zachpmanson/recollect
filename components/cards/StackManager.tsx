@@ -4,7 +4,7 @@ import usePhotoIngest from "@/hooks/usePhotoIngest";
 import { Button } from "@react-navigation/elements";
 import { useEffect, useState } from "react";
 import { Switch, Text, View } from "react-native";
-import { Load } from "../ui/LoadingSpinner";
+import DateSetter from "../DateSetter";
 import CardStack from "./CardStack";
 import DebugModal from "./DebugModal";
 
@@ -15,7 +15,8 @@ export default function StackManager() {
   const db = useDb();
 
   const { loadNImage, ingesting } = usePhotoIngest();
-  const [singleDay, setSingleDay] = useState(false);
+  const [singleDay, setSingleDay] = useState(true);
+  const [editingId, setEditingId] = useState<number>();
 
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +36,10 @@ export default function StackManager() {
         });
       })
       .catch((e) => console.error(e));
+
+    if (status === "rejected") {
+      setEditingId(img.id);
+    }
   }
 
   useEffect(() => {
@@ -72,17 +77,17 @@ export default function StackManager() {
           flexGrow: 1,
         }}
       >
-        {/* <Button onPress={() => newBatch().then()}>More</Button> */}
-        <Load isLoading={currentCards.length === 0 || loading}>
-          <CardStack
-            getNewBatch={newBatch}
-            cards={currentCards.map((currentCards, i) => ({
-              ...currentCards,
-              position: i,
-            }))}
-            setStatus={setStatus}
-          />
-        </Load>
+        {/* <Load isLoading={loading || currentCards.length === 0}> */}
+        <CardStack
+          isLoading={loading}
+          getNewBatch={newBatch}
+          cards={currentCards.map((currentCards, i) => ({
+            ...currentCards,
+            position: i,
+          }))}
+          setStatus={setStatus}
+        />
+        {/* </Load> */}
       </View>
       <DebugModal>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 8 }}>
@@ -94,6 +99,7 @@ export default function StackManager() {
         <Text>ingesting: {String(ingesting)}</Text>
         <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>
       </DebugModal>
+      {editingId && <DateSetter fileId={editingId} setFileId={setEditingId} />}
     </>
   );
 }

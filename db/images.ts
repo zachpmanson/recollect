@@ -136,4 +136,13 @@ export class ImageRepository {
 
     const res = await this.db.runAsync(sql, ...values);
   }
+
+  async clearStatus(status: string) {
+    try {
+      await this.db.runAsync("UPDATE images SET status = 'pending' WHERE status = ?;", status);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
 }

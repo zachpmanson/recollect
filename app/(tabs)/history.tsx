@@ -1,6 +1,6 @@
 import DatePopulated from "@/components/DatePopulated";
 import HistoryCategory from "@/components/HistoryCategory";
-import { ThemedText } from "@/components/ThemedText";
+import { TText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ export default function HomeScreen() {
       <ScrollView>
         <ThemedView style={{ padding: 8, paddingTop: insets?.top, gap: 12 }}>
           <ThemedView style={{ flexDirection: "row" }}>
-            <ThemedText type="title">History</ThemedText>
+            <TText type="title">History</TText>
           </ThemedView>
 
           <HistoryCategory status="rejected" />

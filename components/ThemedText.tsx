@@ -27,6 +27,8 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
   );
 }
 
+export const TText = ThemedText;
+
 const styles = StyleSheet.create({
   default: {
     fontSize: 16,

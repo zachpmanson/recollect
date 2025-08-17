@@ -6,7 +6,7 @@ import { Image } from "expo-image";
 import { deleteDatabaseAsync } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
-import { ThemedText } from "./ThemedText";
+import { TText } from "./ThemedText";
 
 export default function DatePopulated() {
   const db = useDb();
@@ -46,7 +46,7 @@ export default function DatePopulated() {
   return (
     <View style={{ gap: 4 }}>
       <View>
-        <ThemedText type="subtitle">Dated ({count})</ThemedText>
+        <TText type="subtitle">Dated ({count})</TText>
       </View>
       <View style={{ flexDirection: "row", gap: 4 }}>
         <Button onPress={() => clearDb()}>Reset DB?</Button>

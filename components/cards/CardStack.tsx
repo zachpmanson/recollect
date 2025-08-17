@@ -1,10 +1,13 @@
 import { ImageStatus } from "@/db/images";
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AllowedPanDirection, SwipeableCardStack, SwipeDirection } from "react-native-swipeable-card-stack";
+import { TText } from "../ThemedText";
 import { ActionButton } from "../ui/ActionButton";
+import ThemedCircularProgress from "../ui/CircularProgress";
 import { IconSymbol } from "../ui/IconSymbol";
+import { Load } from "../ui/LoadingSpinner";
 import Card from "./Card";
 import { ImageWithPosition } from "./StackManager";
 
@@ -19,10 +22,12 @@ export default function CardStack({
   cards,
   setStatus,
   getNewBatch,
+  isLoading = false,
 }: {
   cards: ImageWithPosition[];
   setStatus: (img: ImageWithPosition, status: ImageStatus) => void;
   getNewBatch: () => void;
+  isLoading?: boolean;
 }) {
   const [swipes, setSwipes] = useState<SwipeDirection[]>([]); // First card already swiped right
 
@@ -30,26 +35,35 @@ export default function CardStack({
 
   const card = cards[swipes.length];
 
+  useEffect(() => {
+    if (cards.length === 0 || isLoading) {
+      setSwipes([]);
+    }
+  }, [cards, setSwipes, isLoading]);
+
   return (
     <View style={styles.container}>
       <View style={{ flex: 1, justifyContent: "center", alignItems: "stretch" }}>
-        <SwipeableCardStack<ImageWithPosition>
-          data={cards}
-          swipes={swipes}
-          renderCard={renderCard}
-          keyExtractor={(item) => String(item.id)}
-          allowedPanDirections={directions as AllowedPanDirection[]}
-          allowedSwipeDirections={directions as AllowedPanDirection[]}
-          onSwipeEnded={(img, direction) => {
-            setSwipes((o) => [...o, direction]);
-            setStatus(img, directionResult[direction]);
-          }}
-          style={styles.stack}
-        />
+        <Load isLoading={isLoading || cards.length === 0}>
+          <SwipeableCardStack<ImageWithPosition>
+            data={cards}
+            swipes={swipes}
+            renderCard={renderCard}
+            keyExtractor={(item) => String(item.id)}
+            allowedPanDirections={directions as AllowedPanDirection[]}
+            allowedSwipeDirections={directions as AllowedPanDirection[]}
+            onSwipeEnded={(img, direction) => {
+              setSwipes((o) => [...o, direction]);
+              setStatus(img, directionResult[direction]);
+            }}
+            style={styles.stack}
+          />
+        </Load>
+        {cards.length === 0 && <TText>No images to display. Please add some images to your collection.</TText>}
       </View>
-      <Text style={{ textAlign: "center", marginBottom: 16 }}>
-        {swipes.length + 1}/{cards.length}
-      </Text>
+      <View style={{ justifyContent: "center", flexDirection: "row" }}>
+        <ThemedCircularProgress size={20} width={5} perc={isLoading ? 100 : (swipes.length / cards.length) * 100} />
+      </View>
       <View style={styles.actionButtonsContainer}>
         <ActionButton
           style={{ backgroundColor: "red" }}
