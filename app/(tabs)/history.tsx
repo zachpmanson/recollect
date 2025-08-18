@@ -27,10 +27,12 @@ export default function HomeScreen() {
             <TText type="title">History</TText>
           </ThemedView>
 
+          <HistoryCategory status="pending" />
           <HistoryCategory status="rejected" />
           <HistoryCategory status="deleted" />
+          <HistoryCategory status="draft" />
+          <HistoryCategory status="updated" />
           <HistoryCategory status="accepted" />
-          <HistoryCategory status="pending" />
           <DatePopulated />
         </ThemedView>
       </ScrollView>

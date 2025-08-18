@@ -16,7 +16,7 @@ export default function StackManager() {
 
   const { loadNImage, ingesting } = usePhotoIngest();
   const [singleDay, setSingleDay] = useState(true);
-  const [editingId, setEditingId] = useState<number>();
+  const [editingImg, setEditingImage] = useState<ImageModel>();
 
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +38,7 @@ export default function StackManager() {
       .catch((e) => console.error(e));
 
     if (status === "rejected") {
-      setEditingId(img.id);
+      setEditingImage(img);
     }
   }
 
@@ -99,7 +99,7 @@ export default function StackManager() {
         <Text>ingesting: {String(ingesting)}</Text>
         <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>
       </DebugModal>
-      {editingId && <DateSetter fileId={editingId} setFileId={setEditingId} />}
+      {editingImg && <DateSetter img={editingImg} setImg={setEditingImage} />}
     </>
   );
 }

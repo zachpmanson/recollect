@@ -1,55 +1,42 @@
 import { ImageModel } from "@/db/images";
-import * as FileSystem from "expo-file-system";
+import { dateFromFilename, getFileModDate } from "@/utils/files";
+import dayjs from "dayjs";
 import { Image } from "expo-image";
 import { memo, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CardProps } from "react-native-swipeable-card-stack";
 import { CardOverlay } from "./CardOverlay";
 
-async function getFileInfo(file: string) {
-  try {
-    const info = await FileSystem.getInfoAsync(file);
-    const modificationTime = "modificationTime" in info ? info.modificationTime : "";
-    return info;
-  } catch (error) {
-    console.error("Error getting file info:", error);
-    return [];
-  }
-}
+const COLOR = {
+  match: "#8BC34A",
+  mismatch: "#f48d85ff",
+  close: "#FF9800",
+};
+
 function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardProps<ImageModel>) {
-  const [meta, setMeta] = useState<any>(null);
+  const [modDate, setModDate] = useState<dayjs.Dayjs>();
 
   const filename = item.original_path.split("/").at(-1);
 
   useEffect(() => {
     if (item.original_path) {
-      getFileInfo(item.original_path).then((info) => {
-        setMeta(info);
+      getFileModDate(item.original_path).then((info) => {
+        setModDate(info);
       });
     }
   }, [item.original_path]);
 
-  const potentialDates = filename?.match(/20\d\d\d\d\d\d/);
-  const filenameDate = potentialDates ? potentialDates[0] : null;
-  const filenameDateObj = filenameDate
-    ? new Date(`${filenameDate.slice(0, 4)}-${filenameDate.slice(4, 6)}-${filenameDate.slice(6, 8)}`)
-    : null;
+  const nameDate = dateFromFilename(filename);
+  const nameDateStr = dateFromFilename(filename)?.format("DD MMM YYYY");
+  const metaDateStr = modDate?.format("DD MMM YYYY");
 
-  const filenameDateStr = filenameDateObj?.toLocaleDateString("en-au", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-
-  const metaDate = meta?.modificationTime ? new Date(meta.modificationTime * 1000) : null;
-  const metaDateStr = metaDate?.toLocaleDateString("en-au", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-
+  const matches = modDate?.isSame(nameDate, "day");
+  const close = modDate && nameDate && Math.abs(modDate.diff(nameDate, "day")) < 2;
+  const color = matches ? "match" : close ? "close" : "mismatch";
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderColor: COLOR[color] }]}>
+      <CardOverlay xAnimatedPosition={xAnimatedPosition} yAnimatedPosition={yAnimatedPosition} />
+
       <View style={{ flex: 1 }}>
         <Image source={item.original_path} style={styles.image} contentFit="contain" />
       </View>
@@ -64,21 +51,12 @@ function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardP
       >
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <View>
-            {metaDate && <Text>Allegedly: </Text>}
-            {filenameDateObj && <Text>Filename Indicates:</Text>}
+            {metaDateStr && <Text>Allegedly: </Text>}
+            {nameDate && <Text>Filename Indicates:</Text>}
           </View>
           <View>
             <Text style={styles.text}>{metaDateStr}</Text>
-            {filenameDateObj && (
-              <Text
-                style={[
-                  styles.text,
-                  metaDateStr === filenameDateStr ? { backgroundColor: "lightgreen" } : { backgroundColor: "red" },
-                ]}
-              >
-                {filenameDateStr}
-              </Text>
-            )}
+            {nameDate && <Text style={[styles.text]}>{nameDateStr}</Text>}
           </View>
         </View>
         <Text>{filename}</Text>
@@ -87,8 +65,6 @@ function UnmemoisedCard({ xAnimatedPosition, yAnimatedPosition, ...item }: CardP
         {/* <Text style={styles.text}>{meta && meta?.modificationTime * 1000}</Text> */}
 
         {/* <Text style={{ textAlign: "center" }}>{item.file}</Text> */}
-
-        <CardOverlay xAnimatedPosition={xAnimatedPosition} yAnimatedPosition={yAnimatedPosition} />
       </View>
     </View>
   );
@@ -103,7 +79,9 @@ const styles = StyleSheet.create({
     // minHeight: 400,
     justifyContent: "space-between",
     backgroundColor: "white",
+    position: "relative",
     borderRadius: 8,
+    borderWidth: 2,
     overflow: "hidden",
     boxShadow: "0 4px 10px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(35, 35, 35, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)",
   },

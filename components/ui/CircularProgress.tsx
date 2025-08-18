@@ -10,7 +10,6 @@ export default function ThemedCircularProgress({ size, width, perc }: { size: nu
       fill={perc}
       tintColor={theme.colors.primary}
       backgroundColor={theme.colors.background}
-      onAnimationComplete={() => console.log("onAnimationComplete")}
       rotation={0}
       duration={200}
     />

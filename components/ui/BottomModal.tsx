@@ -1,5 +1,6 @@
 import { useTheme } from "@react-navigation/native";
-import { DimensionValue, Modal, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useEffect } from "react";
+import { Alert, BackHandler, DimensionValue, Modal, StyleSheet, TouchableOpacity, View } from "react-native";
 
 export default function BottomModal({
   open,
@@ -13,8 +14,29 @@ export default function BottomModal({
   height?: DimensionValue;
 }) {
   const theme = useTheme();
+
+  useEffect(() => {
+    const backAction = () => {
+      setOpen(false);
+      console.log("Back button pressed in BottomModal");
+      Alert.alert("Hold on!", "Are you sure you want to go back?", [
+        {
+          text: "Cancel",
+          onPress: () => null,
+          style: "cancel",
+        },
+        { text: "YES", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+
+    return () => backHandler.remove();
+  }, []);
+
   return (
-    <Modal animationType="slide" transparent visible={open}>
+    <Modal animationType="slide" transparent visible={open} onRequestClose={() => setOpen(false)} hardwareAccelerated>
       <View style={{ padding: 8, flex: 1, alignItems: "center", justifyContent: "center" }}>
         <TouchableOpacity style={{ flex: 1, width: "100%" }} onPress={() => setOpen(false)}></TouchableOpacity>
         <View

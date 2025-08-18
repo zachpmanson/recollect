@@ -1,4 +1,4 @@
-import { ImageModel, ImageStatus } from "@/db/images";
+import { ImageModel, ImageStatus, RawImageModel, rawToPacked } from "@/db/images";
 import useDb from "@/db/useDb";
 import { Button } from "@react-navigation/elements";
 import { useIsFocused } from "@react-navigation/native";
@@ -15,11 +15,15 @@ export default function HistoryCategory({ status }: { status: ImageStatus }) {
   const [totalCount, setTotalCount] = useState(0);
 
   async function setup() {
-    const result = await db.db.getAllAsync<ImageModel>(
-      "SELECT * FROM images WHERE status = ? ORDER BY updated_on DESC LIMIT 15 OFFSET ?;",
-      status
-    );
-    setConfirmed(result);
+    try {
+      const result = await db.db.getAllAsync<RawImageModel>(
+        "SELECT * FROM images WHERE status = ? ORDER BY updated_on DESC LIMIT 15;",
+        status
+      );
+      setConfirmed(result.map(rawToPacked));
+    } catch (error) {
+      console.error("Error fetching images:", error);
+    }
     const countResult = await db.db.getFirstAsync<{ count: number }>(
       "SELECT COUNT(*) as count FROM images WHERE status = ?;",
       status
@@ -52,10 +56,10 @@ export default function HistoryCategory({ status }: { status: ImageStatus }) {
         </TText>
       </View>
       <View style={{ flexDirection: "row", gap: 4, justifyContent: "space-between" }}>
-        <Button onPress={() => clear().then()}>Clear</Button>
+        {status !== "pending" ? <Button onPress={() => clear().then()}>Clear</Button> : <View></View>}
         <View style={{ flexDirection: "row", gap: 4, justifyContent: "space-between" }}>
           <Button onPress={() => setup().then()}>Refresh</Button>
-          {status !== "accepted" && <Button onPress={() => clear().then()}>Commit</Button>}
+          {status !== "accepted" && <Button onPress={() => commit().then()}>Commit</Button>}
         </View>
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>

@@ -3,7 +3,6 @@ import useDb from "@/db/useDb";
 import { Button } from "@react-navigation/elements";
 import { useIsFocused } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { deleteDatabaseAsync } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
 import { TText } from "./ThemedText";
@@ -34,9 +33,7 @@ export default function DatePopulated() {
     setup().then();
   }, [isFocused]);
 
-  function clearDb() {
-    deleteDatabaseAsync("recollect.db").then();
-  }
+  function clearDb() {}
   async function deleteItem(id: number) {
     await db.repositories.image.setStatus(id, "pending");
     // await db.run(`DELETE FROM images WHERE id = ?;`, id);
@@ -46,10 +43,9 @@ export default function DatePopulated() {
   return (
     <View style={{ gap: 4 }}>
       <View>
-        <TText type="subtitle">Dated ({count})</TText>
+        <TText type="subtitle">dated ({count})</TText>
       </View>
-      <View style={{ flexDirection: "row", gap: 4 }}>
-        <Button onPress={() => clearDb()}>Reset DB?</Button>
+      <View style={{ flexDirection: "row", gap: 4, justifyContent: "flex-end" }}>
         <Button onPress={() => setup().then()}>Refresh</Button>
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap" }}>

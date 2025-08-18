@@ -1,7 +1,7 @@
 import dayjs, { Dayjs } from "dayjs";
 import { SQLiteDatabase } from "expo-sqlite";
 
-export type ImageStatus = "pending" | "accepted" | "rejected" | "deleted";
+export type ImageStatus = "pending" | "accepted" | "rejected" | "deleted" | "draft" | "updated";
 
 export type RawImageModel = {
   id: number;
@@ -19,7 +19,7 @@ export type ImageModel = {
   id: number;
   original_path: string;
   has_date: boolean;
-  original_date: Dayjs;
+  original_date: Dayjs | null;
   new_path: string | null;
   new_date: Dayjs | null;
   status: ImageStatus;
@@ -27,10 +27,10 @@ export type ImageModel = {
   updated_on: Dayjs | null;
 };
 
-function rawToPacked(raw: RawImageModel): ImageModel {
+export function rawToPacked(raw: RawImageModel): ImageModel {
   return {
     ...raw,
-    original_date: dayjs(raw.original_date),
+    original_date: raw.original_date ? dayjs(raw.original_date) : null,
     new_date: raw.new_date ? dayjs(raw.new_date) : null,
     updated_on: raw.updated_on ? dayjs(raw.updated_on) : null,
   };
@@ -84,8 +84,17 @@ export class ImageRepository {
     return images.map(rawToPacked);
   }
 
+  async getOne(id: number) {
+    const raw = await this.db.getFirstAsync<RawImageModel>(`SELECT * FROM images WHERE id = ?;`, id);
+    if (!raw) return undefined;
+    return rawToPacked(raw);
+  }
+
   async setStatus(id: number, status: ImageStatus) {
+    console.debug("Setting status for image", id, "to", status);
     await this.db.runAsync(`UPDATE images SET status = ?, updated_on = time('now') WHERE id = ?;`, status, id);
+    const o = await this.getOne(id);
+    console.debug("Updated image:", o);
   }
 
   async getMissingOriginalDate(n: number) {
@@ -118,7 +127,7 @@ export class ImageRepository {
     const values = updates.flatMap(({ id, original_path, original_date, status }) => [
       id,
       original_path,
-      original_date.toISOString(),
+      original_date?.toISOString() ?? null,
       true,
       status,
     ]);
@@ -144,5 +153,9 @@ export class ImageRepository {
       console.error(e);
       throw e;
     }
+  }
+
+  async setNewDate(id: number, date: Dayjs, status: ImageStatus = "draft") {
+    await this.db.runAsync(`UPDATE images SET new_date = ?, status = ? WHERE id = ?;`, date.toISOString(), status, id);
   }
 }
