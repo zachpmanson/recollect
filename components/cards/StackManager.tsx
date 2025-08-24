@@ -3,8 +3,9 @@ import useDb from "@/db/useDb";
 import usePhotoIngest from "@/hooks/usePhotoIngest";
 import { Button } from "@react-navigation/elements";
 import { useEffect, useState } from "react";
-import { Switch, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import DateSetter from "../DateSetter";
+import TSwitch from "../ThemedSwitch";
 import CardStack from "./CardStack";
 import DebugModal from "./DebugModal";
 
@@ -16,6 +17,7 @@ export default function StackManager() {
 
   const { loadNImage, ingesting } = usePhotoIngest();
   const [singleDay, setSingleDay] = useState(true);
+  const [immediateDate, setImmediateDate] = useState(false);
   const [editingImg, setEditingImage] = useState<ImageModel>();
 
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function StackManager() {
       })
       .catch((e) => console.error(e));
 
-    if (status === "rejected") {
+    if (status === "rejected" && immediateDate) {
       setEditingImage(img);
     }
   }
@@ -90,10 +92,9 @@ export default function StackManager() {
         {/* </Load> */}
       </View>
       <DebugModal>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 8 }}>
-          <Text>Single Day</Text>
-          <Switch value={singleDay} onChange={() => setSingleDay((o) => !singleDay)} />
-        </View>
+        <TSwitch value={singleDay} onChange={() => setSingleDay((o) => !o)} label="Single Day" />
+        <TSwitch value={immediateDate} onChange={() => setImmediateDate((o) => !o)} label="Immediately Set Dates" />
+
         <Button onPress={() => newBatch().then()}>New Batch</Button>
         <Text>loading: {String(loading)}</Text>
         <Text>ingesting: {String(ingesting)}</Text>
