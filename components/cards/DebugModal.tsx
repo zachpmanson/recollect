@@ -1,15 +1,17 @@
 import { Button } from "@react-navigation/elements";
 import { useState } from "react";
 import { Modal, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function DebugModal({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   return (
     <>
       <Button
         // color="white"
         onPress={() => setOpen(true)}
-        style={{ width: 100, position: "absolute", top: 0, right: 0 }}
+        style={{ width: 100, position: "absolute", top: insets.top, right: 0 }}
       >
         Debug
       </Button>
