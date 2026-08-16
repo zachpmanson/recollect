@@ -1,6 +1,6 @@
 import { ImageModel } from "@/db/images";
 import useDb from "@/db/useDb";
-import { getFileModDate } from "@/utils/files";
+import { dateFromFilename, getFileModDate } from "@/utils/files";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Button } from "@react-navigation/elements";
 import dayjs, { Dayjs } from "dayjs";
@@ -18,6 +18,7 @@ export default function DateSetter({ img, setImg }: { img: ImageModel; setImg: (
   const mode = "date";
 
   const filename = img?.original_path.split("/").at(-1);
+  const nameDate = dateFromFilename(filename);
 
   function update(status: "draft" | "updated") {
     db.repositories.image.setNewDate(img.id, day, status).then(() => {
@@ -53,6 +54,11 @@ export default function DateSetter({ img, setImg }: { img: ImageModel; setImg: (
         {/* <TText>Old date: {img.original_date?.format("DD MMM YYYY")}</TText> */}
         <TText>Old date: {ogDate?.format("DD MMM YYYY")}</TText>
         <TText>New date: {day?.format("DD MMM YYYY")}</TText>
+        {nameDate && (
+          <Button color="purple" onPress={() => { setSelected(nameDate.toDate()); setShowPicker(false); }}>
+            Use filename date ({nameDate.format("DD MMM YYYY")})
+          </Button>
+        )}
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
           <Button color="grey" onPress={() => setImg(undefined)}>
             Close
