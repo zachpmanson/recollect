@@ -6,22 +6,21 @@
 
 -include .env
 
-APK := android/app/build/outputs/apk/debug/app-debug.apk
+APK := android/app/build/outputs/apk/release/app-release.apk
 APP_ID := com.anonymous.recollect
 ACTIVITY := $(APP_ID)/.MainActivity
 
 .PHONY: build prebuild deps lint typecheck ci clean dev devices connect deploy
 
-# Build the debug APK. Runs prebuild first if android/ doesn't exist yet.
-build: android-ensure
-	cd android && ./gradlew assembleDebug
+# Build the release APK (signed with the debug keystore, stash pattern).
+# Prebuild first — it regenerates android/ from app.json.
+build:
+	npx expo prebuild --platform android --no-install
+	cd android && ./gradlew assembleRelease
 
 # Regenerate the native android/ project (wipes it).
 prebuild:
 	npx expo prebuild --platform android --no-install
-
-android-ensure:
-	@if [ ! -d android ]; then $(MAKE) prebuild; fi
 
 # Install JS dependencies (frozen against pnpm-lock.yaml).
 deps:
