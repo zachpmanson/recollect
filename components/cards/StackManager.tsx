@@ -26,6 +26,7 @@ export default function StackManager() {
   const { loadNImage, ingesting } = usePhotoIngest();
   const [singleDay, setSingleDay] = useState(true);
   const [immediateDate, setImmediateDate] = useState(false);
+  const [excludeDated, setExcludeDated] = useState(false);
   const [editingImg, setEditingImage] = useState<ImageModel>();
 
   const [loading, setLoading] = useState(false);
@@ -88,7 +89,7 @@ export default function StackManager() {
     // Crossed a batch border: reload the stack with this image as the top card.
     setLoading(true);
     try {
-      const images = await loadNImage(10, singleDay);
+      const images = await loadNImage(10, singleDay, excludeDated);
       const rest = images.filter((i) => i.id !== last.img.id);
       setCurrentCards([{ ...last.img, status: "pending" }, ...rest]);
     } finally {
@@ -109,7 +110,7 @@ export default function StackManager() {
   async function newBatch() {
     console.log("Getting new batch");
     setLoading(true);
-    const images = await loadNImage(10, singleDay);
+    const images = await loadNImage(10, singleDay, excludeDated);
     setCurrentCards(images);
     setLoading(false);
   }
@@ -150,6 +151,7 @@ export default function StackManager() {
       <DebugModal>
         <TSwitch value={singleDay} onChange={() => setSingleDay((o) => !o)} label="Single Day" />
         <TSwitch value={immediateDate} onChange={() => setImmediateDate((o) => !o)} label="Immediately Set Dates" />
+        <TSwitch value={excludeDated} onChange={() => setExcludeDated((o) => !o)} label="Exclude Already-Dated (name = mod date)" />
 
         <Button onPress={() => newBatch().then()}>New Batch</Button>
         <Text>loading: {String(loading)}</Text>

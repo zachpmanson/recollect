@@ -1,4 +1,5 @@
 import useDb from "@/db/useDb";
+import { ImageModel } from "@/db/images";
 import dayjs from "dayjs";
 import * as FileSystem from "expo-file-system";
 import { File } from "expo-file-system/next";
@@ -6,6 +7,7 @@ import * as MediaLibrary from "expo-media-library";
 import "./exifr-setup"; // must run before exifr loads (navigator.userAgent shim)
 import exifr from "exifr/dist/lite.esm.js";
 import { useEffect, useState } from "react";
+import { dateFromFilename } from "@/utils/files";
 
 export const FOLDER = "file:///storage/emulated/0/DCIM/Camera/";
 
@@ -143,15 +145,47 @@ export default function usePhotoIngest() {
     setup().then();
   }, [permissionResponse?.status]);
 
-  async function loadNImage(n: number, singleDay: boolean = false) {
-    console.log(`Loading ${n} images, singleDay: ${singleDay}`);
+  async function loadNImage(n: number, singleDay: boolean = false, excludeNameModMatch = false) {
+    console.log(`Loading ${n} images, singleDay: ${singleDay}, excludeNameModMatch: ${excludeNameModMatch}`);
+    // Fetch a larger pool so we can drop "already dated" images and still
+    // return a full batch.
+    const pool = 3 * n;
+    let images: ImageModel[];
     if (singleDay) {
       const randImg = await db.repositories.image.getNPending(1);
       console.debug("Random image for single day:", randImg);
-      return await db.repositories.image.getNPending(n, randImg[0].original_date);
+      images = await db.repositories.image.getNPending(pool, randImg[0]?.original_date);
     } else {
-      return await db.repositories.image.getNPending(n);
+      images = await db.repositories.image.getNPending(pool);
     }
+
+    if (!excludeNameModMatch) return images.slice(0, n);
+
+    // Exclude images whose filename date and file modification date already
+    // agree — they're effectively dated already, so skip re-deciding them.
+    const kept: ImageModel[] = [];
+    for (const img of images) {
+      if (kept.length >= n) break;
+      const nameDate = dateFromFilename(img.original_path);
+      if (!nameDate) {
+        kept.push(img);
+        continue;
+      }
+      try {
+        const info = await FileSystem.getInfoAsync(img.original_path);
+        if (!info.exists) {
+          kept.push(img);
+          continue;
+        }
+        const modDate = dayjs(info.modificationTime * 1000);
+        if (!modDate.isSame(nameDate, "day")) kept.push(img);
+      } catch (error) {
+        // Never drop an image because the stat failed.
+        console.warn(`Could not stat ${img.original_path}:`, error);
+        kept.push(img);
+      }
+    }
+    return kept;
   }
 
   // async function pickDay() {
