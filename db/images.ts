@@ -59,7 +59,7 @@ export class ImageRepository {
     }
   }
 
-  async getNPending(n: number, day?: Dayjs) {
+  async getNPending(n: number, day?: Dayjs | null) {
     let images: RawImageModel[];
     if (day) {
       try {
