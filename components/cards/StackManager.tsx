@@ -34,11 +34,10 @@ export default function StackManager() {
 
   const [currentCards, setCurrentCards] = useState<ImageModel[]>([]);
   const [history, setHistory] = useState<Decision[]>([]);
-  // Day of the last loaded batch, and an optional lock: once the user picks
-  // "Same Day", subsequent batches keep drawing from that day until the
-  // repeat button clears the lock.
+  // Day of the last loaded batch. With Single Day mode, batches are sticky:
+  // each new batch keeps drawing from this day until the repeat button
+  // explicitly hops to a fresh random day.
   const [currentDay, setCurrentDay] = useState<Dayjs>();
-  const [lockedDay, setLockedDay] = useState<Dayjs>();
 
   function recordDecision(img: ImageModel, status: ImageStatus) {
     setHistory((prev) => [...prev.slice(-(MAX_HISTORY - 1)), { img, status }]);
@@ -95,7 +94,7 @@ export default function StackManager() {
     // Crossed a batch border: reload the stack with this image as the top card.
     setLoading(true);
     try {
-      const images = await loadNImage(10, singleDay, excludeDated, lockedDay);
+      const images = await loadNImage(10, singleDay, excludeDated, currentDay);
       const rest = images.filter((i) => i.id !== last.img.id);
       setCurrentCards([{ ...last.img, status: "pending" }, ...rest]);
     } finally {
@@ -113,21 +112,28 @@ export default function StackManager() {
     }
   }, [currentCards]);
 
-  async function newBatch(resetDayLock = false) {
+  useEffect(() => {
+    // Re-enabling Single Day starts from a fresh random day (the sticky
+    // anchor from a previous session/day is no longer meaningful).
+    if (singleDay) setCurrentDay(undefined);
+  }, [singleDay]);
+
+  async function newBatch(resetDay = false) {
     console.log("Getting new batch");
-    if (resetDayLock) setLockedDay(undefined);
+    // Sticky Single Day: anchor on the current day unless the repeat button
+    // asks for a fresh random day.
+    const anchor = resetDay ? undefined : currentDay;
+    if (resetDay) setCurrentDay(undefined);
     setLoading(true);
-    const images = await loadNImage(10, singleDay, excludeDated, resetDayLock ? undefined : lockedDay);
+    let images = await loadNImage(10, singleDay, excludeDated, anchor);
+    // The day is exhausted: fall back to a random day rather than showing an
+    // empty stack.
+    if (images.length === 0 && anchor) {
+      images = await loadNImage(10, singleDay, excludeDated, undefined);
+    }
     setCurrentCards(images);
     if (singleDay) setCurrentDay(images[0]?.original_date ?? undefined);
     setLoading(false);
-  }
-
-  /** Continue drawing from the current day until the lock is cleared. */
-  async function sameDayBatch() {
-    if (!currentDay) return;
-    setLockedDay(currentDay);
-    await newBatch();
   }
 
   useEffect(() => {
@@ -168,13 +174,10 @@ export default function StackManager() {
         <TSwitch value={immediateDate} onChange={() => setImmediateDate((o) => !o)} label="Immediately Set Dates" />
         <TSwitch value={excludeDated} onChange={() => setExcludeDated((o) => !o)} label="Exclude Already-Dated (name = mod date)" />
 
-        <Button onPress={() => sameDayBatch().then()}>Same Day</Button>
-
-        <Button onPress={() => newBatch().then()}>New Batch</Button>
+        <Button onPress={() => newBatch(true).then()}>New Random Day</Button>
         <Text>loading: {String(loading)}</Text>
         <Text>ingesting: {String(ingesting)}</Text>
-        <Text>day: {currentDay?.format("DD MMM YYYY") ?? "—"} {lockedDay ? "(locked)" : ""}</Text>
-        <Text>ingesting: {String(ingesting)}</Text>
+        <Text>day: {currentDay?.format("DD MMM YYYY") ?? "—"}</Text>
         <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>
       </DebugModal>
       {editingImg && <DateSetter img={editingImg} setImg={setEditingImage} />}

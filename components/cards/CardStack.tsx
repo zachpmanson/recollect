@@ -28,7 +28,7 @@ export default function CardStack({
 }: {
   cards: ImageWithPosition[];
   setStatus: (img: ImageWithPosition, status: ImageStatus) => void;
-  getNewBatch: (resetDayLock?: boolean) => void;
+  getNewBatch: (resetDay?: boolean) => void;
   canUndo?: boolean;
   onUndo?: () => Promise<boolean>;
   isLoading?: boolean;
