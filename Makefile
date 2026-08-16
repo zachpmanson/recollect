@@ -14,9 +14,14 @@ ACTIVITY := $(APP_ID)/.MainActivity
 
 # Build the release APK (signed with the debug keystore, stash pattern).
 # Prebuild first — it regenerates android/ from app.json.
+# Default builds all ABIs; `make build ABI=arm64-v8a` builds one (smaller APK).
+ABI ?=
+ABIS_ALL := arm64-v8a,armeabi-v7a,x86,x86_64
+
 build:
 	npx expo prebuild --platform android --no-install
-	cd android && ./gradlew assembleRelease
+	cd android && ./gradlew assembleRelease \
+		-PreactNativeArchitectures=$(if $(ABI),$(ABI),$(ABIS_ALL))
 
 # Regenerate the native android/ project (wipes it).
 prebuild:
