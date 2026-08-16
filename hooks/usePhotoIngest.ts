@@ -1,6 +1,6 @@
 import useDb from "@/db/useDb";
 import { ImageModel } from "@/db/images";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import * as FileSystem from "expo-file-system";
 import { File } from "expo-file-system/next";
 import * as MediaLibrary from "expo-media-library";
@@ -145,16 +145,18 @@ export default function usePhotoIngest() {
     setup().then();
   }, [permissionResponse?.status]);
 
-  async function loadNImage(n: number, singleDay: boolean = false, excludeNameModMatch = false) {
+  async function loadNImage(n: number, singleDay: boolean = false, excludeNameModMatch = false, dayAnchor?: Dayjs | null) {
     console.log(`Loading ${n} images, singleDay: ${singleDay}, excludeNameModMatch: ${excludeNameModMatch}`);
     // Fetch a larger pool so we can drop "already dated" images and still
     // return a full batch.
     const pool = 3 * n;
     let images: ImageModel[];
     if (singleDay) {
-      const randImg = await db.repositories.image.getNPending(1);
-      console.debug("Random image for single day:", randImg);
-      images = await db.repositories.image.getNPending(pool, randImg[0]?.original_date);
+      // Prefer the caller's chosen day; otherwise anchor on a random pending
+      // image's day.
+      const anchor = dayAnchor ?? (await db.repositories.image.getNPending(1))[0]?.original_date;
+      console.debug("Random image for single day:", anchor);
+      images = await db.repositories.image.getNPending(pool, anchor);
     } else {
       images = await db.repositories.image.getNPending(pool);
     }

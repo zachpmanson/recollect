@@ -2,6 +2,7 @@ import { ImageModel, ImageStatus } from "@/db/images";
 import useDb from "@/db/useDb";
 import usePhotoIngest from "@/hooks/usePhotoIngest";
 import { Button } from "@react-navigation/elements";
+import dayjs, { Dayjs } from "dayjs";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import DateSetter from "../DateSetter";
@@ -33,6 +34,11 @@ export default function StackManager() {
 
   const [currentCards, setCurrentCards] = useState<ImageModel[]>([]);
   const [history, setHistory] = useState<Decision[]>([]);
+  // Day of the last loaded batch, and an optional lock: once the user picks
+  // "Same Day", subsequent batches keep drawing from that day until the
+  // repeat button clears the lock.
+  const [currentDay, setCurrentDay] = useState<Dayjs>();
+  const [lockedDay, setLockedDay] = useState<Dayjs>();
 
   function recordDecision(img: ImageModel, status: ImageStatus) {
     setHistory((prev) => [...prev.slice(-(MAX_HISTORY - 1)), { img, status }]);
@@ -89,7 +95,7 @@ export default function StackManager() {
     // Crossed a batch border: reload the stack with this image as the top card.
     setLoading(true);
     try {
-      const images = await loadNImage(10, singleDay, excludeDated);
+      const images = await loadNImage(10, singleDay, excludeDated, lockedDay);
       const rest = images.filter((i) => i.id !== last.img.id);
       setCurrentCards([{ ...last.img, status: "pending" }, ...rest]);
     } finally {
@@ -107,12 +113,21 @@ export default function StackManager() {
     }
   }, [currentCards]);
 
-  async function newBatch() {
+  async function newBatch(resetDayLock = false) {
     console.log("Getting new batch");
+    if (resetDayLock) setLockedDay(undefined);
     setLoading(true);
-    const images = await loadNImage(10, singleDay, excludeDated);
+    const images = await loadNImage(10, singleDay, excludeDated, resetDayLock ? undefined : lockedDay);
     setCurrentCards(images);
+    if (singleDay) setCurrentDay(images[0]?.original_date);
     setLoading(false);
+  }
+
+  /** Continue drawing from the current day until the lock is cleared. */
+  async function sameDayBatch() {
+    if (!currentDay) return;
+    setLockedDay(currentDay);
+    await newBatch();
   }
 
   useEffect(() => {
@@ -140,6 +155,7 @@ export default function StackManager() {
           getNewBatch={newBatch}
           canUndo={history.length > 0}
           onUndo={undoLast}
+          onSameDay={sameDayBatch}
           cards={currentCards.map((currentCards, i) => ({
             ...currentCards,
             position: i,
@@ -155,6 +171,8 @@ export default function StackManager() {
 
         <Button onPress={() => newBatch().then()}>New Batch</Button>
         <Text>loading: {String(loading)}</Text>
+        <Text>ingesting: {String(ingesting)}</Text>
+        <Text>day: {currentDay?.format("DD MMM YYYY") ?? "—"} {lockedDay ? "(locked)" : ""}</Text>
         <Text>ingesting: {String(ingesting)}</Text>
         <Text>{JSON.stringify({ currentCards }, null, 2)}</Text>
       </DebugModal>
