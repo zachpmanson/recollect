@@ -119,7 +119,7 @@ export default function StackManager() {
     setLoading(true);
     const images = await loadNImage(10, singleDay, excludeDated, resetDayLock ? undefined : lockedDay);
     setCurrentCards(images);
-    if (singleDay) setCurrentDay(images[0]?.original_date);
+    if (singleDay) setCurrentDay(images[0]?.original_date ?? undefined);
     setLoading(false);
   }
 
