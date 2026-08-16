@@ -1,10 +1,16 @@
 import useDb from "@/db/useDb";
 import dayjs from "dayjs";
 import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system/next";
 import * as MediaLibrary from "expo-media-library";
+import exifr from "exifr";
 import { useEffect, useState } from "react";
 
 export const FOLDER = "file:///storage/emulated/0/DCIM/Camera/";
+
+// EXIF date tags live in the first few KB after the JPEG SOI marker (and early
+// in HEIC's meta box), so reading just the head of a camera file is enough.
+const EXIF_READ_LIMIT = 512 * 1024;
 
 async function getFileModDate(file: string) {
   const info = await FileSystem.getInfoAsync(file);
@@ -13,10 +19,41 @@ async function getFileModDate(file: string) {
     throw new Error(`File does not exist: ${file}`);
   }
 
-  const modTime = info.modificationTime;
-  const date = dayjs(info.modificationTime * 1000);
+  return dayjs(info.modificationTime * 1000);
+}
 
-  return date;
+async function getExifDate(uri: string): Promise<dayjs.Dayjs | null> {
+  try {
+    const file = new File(uri);
+    if (!file.exists) return null;
+    const size = file.size ?? 0;
+    if (size === 0) return null;
+
+    // Read only the head of the file — EXIF date tags sit just after the
+    // JPEG SOI / HEIC meta box, so a full read of multi-MB camera files is
+    // unnecessary.
+    const handle = file.open();
+    let head: Uint8Array;
+    try {
+      handle.offset = 0;
+      head = handle.readBytes(Math.min(size, EXIF_READ_LIMIT));
+    } finally {
+      handle.close();
+    }
+
+    const tags = await exifr.parse(head, {
+      tiff: false,
+      exif: true,
+      gps: false,
+      pick: ["DateTimeOriginal", "CreateDate", "ModifyDate"],
+    });
+    if (!tags) return null;
+    const date = tags.DateTimeOriginal ?? tags.CreateDate ?? tags.ModifyDate;
+    return date ? dayjs(date as Date) : null;
+  } catch (error) {
+    console.warn(`No EXIF date for ${uri}:`, error);
+    return null;
+  }
 }
 
 async function getFiles() {
@@ -53,7 +90,10 @@ export default function usePhotoIngest() {
 
       const modDates = await Promise.allSettled(
         images.map(async (i) => {
-          return { ...i, original_date: await getFileModDate(i.original_path) };
+          // Prefer the camera's EXIF timestamp; fall back to the file's
+          // modification time when the image has no EXIF date.
+          const exifDate = await getExifDate(i.original_path);
+          return { ...i, original_date: exifDate ?? (await getFileModDate(i.original_path)) };
         })
       );
       const fulfilled = modDates.filter((r) => r.status === "fulfilled");
