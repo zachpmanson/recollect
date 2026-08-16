@@ -22,11 +22,15 @@ export default function CardStack({
   cards,
   setStatus,
   getNewBatch,
+  canUndo = false,
+  onUndo,
   isLoading = false,
 }: {
   cards: ImageWithPosition[];
   setStatus: (img: ImageWithPosition, status: ImageStatus) => void;
   getNewBatch: () => void;
+  canUndo?: boolean;
+  onUndo?: () => Promise<boolean>;
   isLoading?: boolean;
 }) {
   const [swipes, setSwipes] = useState<SwipeDirection[]>([]); // First card already swiped right
@@ -76,13 +80,16 @@ export default function CardStack({
           <IconSymbol name="clear" color="white" />
         </ActionButton>
         <ActionButton
-          onPress={() => {
-            // reqPerms();
-            setSwipes((prev) => {
-              const next = [...prev];
-              next.pop(); // Remove the last swipe
-              return next;
-            });
+          disabled={!canUndo}
+          onPress={async () => {
+            // Undo the most recent decision. If the image is still in the
+            // current batch, pop the swipe so the card slides back; if it
+            // belonged to a previous batch, the parent reloads the stack
+            // with the image restored as the top card.
+            const wasInBatch = await onUndo?.();
+            if (wasInBatch) {
+              setSwipes((prev) => prev.slice(0, -1));
+            }
           }}
         >
           <IconSymbol name="undo" color="black" />
