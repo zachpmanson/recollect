@@ -3,7 +3,8 @@ import dayjs from "dayjs";
 import * as FileSystem from "expo-file-system";
 import { File } from "expo-file-system/next";
 import * as MediaLibrary from "expo-media-library";
-import exifr from "exifr";
+import "./exifr-setup"; // must run before exifr loads (navigator.userAgent shim)
+import exifr from "exifr/dist/lite.esm.js";
 import { useEffect, useState } from "react";
 
 export const FOLDER = "file:///storage/emulated/0/DCIM/Camera/";
@@ -41,12 +42,10 @@ async function getExifDate(uri: string): Promise<dayjs.Dayjs | null> {
       handle.close();
     }
 
-    const tags = await exifr.parse(head, {
-      tiff: false,
-      exif: true,
-      gps: false,
-      pick: ["DateTimeOriginal", "CreateDate", "ModifyDate"],
-    });
+    // exifr lite build — no options: its option-filtering path throws
+    // ("undefined is not iterable", exifr 7.1.3 bug), but a plain parse
+    // returns EXIF + XMP tags fine (and skips GPS/ICC etc. in this build).
+    const tags = await exifr.parse(head);
     if (!tags) return null;
     const date = tags.DateTimeOriginal ?? tags.CreateDate ?? tags.ModifyDate;
     return date ? dayjs(date as Date) : null;
