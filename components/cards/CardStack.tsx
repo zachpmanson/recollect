@@ -1,5 +1,5 @@
 import { ImageStatus } from "@/db/images";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AllowedPanDirection, SwipeableCardStack, SwipeDirection } from "react-native-swipeable-card-stack";
@@ -25,6 +25,7 @@ export default function CardStack({
   canUndo = false,
   onUndo,
   isLoading = false,
+  batchKey = 0,
 }: {
   cards: ImageWithPosition[];
   setStatus: (img: ImageWithPosition, status: ImageStatus) => void;
@@ -32,6 +33,8 @@ export default function CardStack({
   canUndo?: boolean;
   onUndo?: () => Promise<boolean>;
   isLoading?: boolean;
+  /** Increment whenever a new batch replaces the current one. */
+  batchKey?: number;
 }) {
   const [swipes, setSwipes] = useState<SwipeDirection[]>([]); // First card already swiped right
 
@@ -39,11 +42,15 @@ export default function CardStack({
 
   const card = cards[swipes.length];
 
+  const prevBatchKey = useRef(batchKey);
   useEffect(() => {
-    if (cards.length === 0 || isLoading) {
+    // Reset swipe history whenever the batch is replaced (new batchKey), the
+    // deck is emptied, or a spinner load is in flight.
+    if (cards.length === 0 || isLoading || batchKey !== prevBatchKey.current) {
       setSwipes([]);
+      prevBatchKey.current = batchKey;
     }
-  }, [cards, setSwipes, isLoading]);
+  }, [cards, setSwipes, isLoading, batchKey]);
 
   return (
     <View style={styles.container}>
