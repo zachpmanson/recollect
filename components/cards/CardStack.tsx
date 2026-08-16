@@ -73,6 +73,7 @@ export default function CardStack({
           style={{ backgroundColor: "red" }}
           disabled={cards.length === swipes.length}
           onPress={() => {
+            if (!card) return;
             setSwipes((current) => [...current, "left"]);
             setStatus(card, "rejected");
           }}
@@ -106,7 +107,9 @@ export default function CardStack({
 
         <ActionButton
           style={{ backgroundColor: "lightgreen" }}
+          disabled={cards.length === swipes.length}
           onPress={() => {
+            if (!card) return;
             setSwipes((current) => [...current, "right"]);
             setStatus(card, "accepted");
           }}
