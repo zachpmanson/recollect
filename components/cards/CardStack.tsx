@@ -24,7 +24,6 @@ export default function CardStack({
   getNewBatch,
   canUndo = false,
   onUndo,
-  onSameDay,
   isLoading = false,
 }: {
   cards: ImageWithPosition[];
@@ -32,7 +31,6 @@ export default function CardStack({
   getNewBatch: (resetDayLock?: boolean) => void;
   canUndo?: boolean;
   onUndo?: () => Promise<boolean>;
-  onSameDay?: () => void;
   isLoading?: boolean;
 }) {
   const [swipes, setSwipes] = useState<SwipeDirection[]>([]); // First card already swiped right
@@ -104,15 +102,6 @@ export default function CardStack({
           disabled={cards.length === swipes.length}
         >
           <IconSymbol name="repeat" color={"black"} />
-        </ActionButton>
-        <ActionButton
-          disabled={!onSameDay}
-          onPress={() => {
-            onSameDay?.();
-            setSwipes([]);
-          }}
-        >
-          <IconSymbol name="date-range" color={"black"} />
         </ActionButton>
 
         <ActionButton

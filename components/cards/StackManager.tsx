@@ -155,7 +155,6 @@ export default function StackManager() {
           getNewBatch={newBatch}
           canUndo={history.length > 0}
           onUndo={undoLast}
-          onSameDay={sameDayBatch}
           cards={currentCards.map((currentCards, i) => ({
             ...currentCards,
             position: i,
@@ -168,6 +167,8 @@ export default function StackManager() {
         <TSwitch value={singleDay} onChange={() => setSingleDay((o) => !o)} label="Single Day" />
         <TSwitch value={immediateDate} onChange={() => setImmediateDate((o) => !o)} label="Immediately Set Dates" />
         <TSwitch value={excludeDated} onChange={() => setExcludeDated((o) => !o)} label="Exclude Already-Dated (name = mod date)" />
+
+        <Button onPress={() => sameDayBatch().then()}>Same Day</Button>
 
         <Button onPress={() => newBatch().then()}>New Batch</Button>
         <Text>loading: {String(loading)}</Text>
