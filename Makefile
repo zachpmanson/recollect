@@ -24,7 +24,7 @@ CAP := $(HOME)/beltino/scripts/build-capped.sh
 
 build:
 	npx expo prebuild --platform android --no-install
-	$(CAP) "$(BUILD_CORES)" "$(CURDIR)" -- assembleRelease \
+	$(CAP) "$(CURDIR)" -- assembleRelease \
 		-PreactNativeArchitectures=$(if $(ABI),$(ABI),$(ABIS_ALL))
 
 # Regenerate the native android/ project (wipes it).
